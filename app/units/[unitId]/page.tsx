@@ -1,13 +1,16 @@
 import Link from 'next/link';
 import { evaluateLeaseAgainstRules } from '@/services/lease-validation';
-import { getLeaseByUnitId, getUnitById } from '@/services/demo-data-store';
+import { getIssuesByUnitId, getLeaseByUnitId, getUnitById, getWorkOrdersByUnitId } from '@/services/demo-data-store';
 import unitsData from '@/data/units.json';
 import LeaseReview from './lease-review';
 import { getDemoDataStore } from '@/services/demo-data-store';
+import PropertyIssuesPanel from './property-issues';
 
 export default function UnitDetailsPage({ params }: { params: { unitId: string } }) {
   const unit = getUnitById(params.unitId);
   const leaseRecord = getLeaseByUnitId(params.unitId);
+  const issues = getIssuesByUnitId(params.unitId);
+  const workOrders = getWorkOrdersByUnitId(params.unitId);
 
   if (!unit) {
     return (
@@ -91,6 +94,8 @@ export default function UnitDetailsPage({ params }: { params: { unitId: string }
               ))}
             </div>
           </div>
+
+          <PropertyIssuesPanel unitId={params.unitId} initialIssues={issues} initialWorkOrders={workOrders} />
         </section>
 
         <aside className="space-y-6">

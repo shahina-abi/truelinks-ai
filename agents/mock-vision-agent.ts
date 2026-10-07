@@ -1,40 +1,38 @@
-import type { PropertyIssue } from '@/types/domain';
-
 export async function analyzeImages(
-  images: Array<{ name: string; type: string }>,
+  images: Array<{ name?: string; type?: string; size?: number }>,
   unitContext: { unit_id: string },
-): Promise<Omit<PropertyIssue, 'created_at'> & { observed_facts: string[]; inferences: string[] }> {
+): Promise<{
+  issueType: string;
+  title: string;
+  description: string;
+  location: string;
+  severity: 'low' | 'medium' | 'high';
+  confidence: number;
+  recommendedAction: string;
+  evidence: string;
+  imageReferences: string[];
+}> {
   if (!images.length) {
     throw new Error('At least one image is required before a property issue can be analyzed.');
   }
 
-  const observedFacts = [
-    'Visible wall staining is present near the AC return vent.',
-    'A split AC unit is installed in the living room wall.',
-    'The ceiling around the vent shows discoloration and minor surface flaking.',
-  ];
-
-  const inferences = [
-    'The staining may be caused by condensation or a prior leak, but the exact source is not proven from a photo alone.',
-    'The AC may still be operating, but operational status cannot be confirmed without an on-site inspection.',
-  ];
+  const fileNames = images.map((image) => image.name || 'demo-image-reference.jpg');
+  const issueType = 'water_damage';
+  const title = 'Possible water leak';
+  const description = 'Visible staining and moisture damage near the ceiling suggest a possible leak or condensation issue requiring inspection.';
+  const location = 'Living room ceiling';
+  const severity = 'high';
+  const confidence = 0.88;
 
   return {
-    issue_id: `ISS-${Date.now()}`,
-    unit_id: unitContext.unit_id,
-    title: 'AC moisture staining and wall finish damage',
-    description: 'Visible moisture staining and minor finish degradation around the AC vent suggest a possible leak or condensation issue requiring inspection.',
-    observed_condition: 'Moisture staining around a wall-mounted AC unit with minor paint cracking.',
-    detected_equipment: ['Wall-mounted split AC', 'Ceiling/Wall finish'],
-    uncertainty_notes: inferences,
-    image_references: images.map((image) => image.name),
-    work_order: {
-      title: 'Inspect AC condensation and repair wall finish',
-      repair_description: 'Schedule a technician to inspect the AC drainage/condensation path, identify the root cause of staining, and repair any damaged wall finish or sealant.',
-      status: 'Draft',
-    },
-    status: 'Draft',
-    observed_facts: observedFacts,
-    inferences,
+    issueType,
+    title,
+    description,
+    location,
+    severity,
+    confidence,
+    recommendedAction: 'Inspect plumbing and the affected ceiling area before scheduling repairs.',
+    evidence: `Demo vision evidence for ${fileNames[0]}: illustrative only, not a confirmed field inspection.`,
+    imageReferences: fileNames,
   };
 }

@@ -2,7 +2,9 @@ export type RuleStatus = 'PASS' | 'FAIL' | 'NOT_DETERMINABLE';
 export type UnitStatus = 'available' | 'occupied';
 export type ReviewAction = 'accept' | 'edit' | 'reject' | 'dismiss';
 export type LeaseReviewStatus = 'PENDING_REVIEW' | 'ACCEPTED' | 'REJECTED';
-export type WorkOrderStatus = 'Draft' | 'Approved' | 'In Progress' | 'Completed' | 'Rejected';
+export type PropertyIssueStatus = 'Draft' | 'Approved' | 'Rejected' | 'Resolved' | 'PENDING_REVIEW' | 'ACCEPTED';
+export type WorkOrderPriority = 'low' | 'medium' | 'high';
+export type WorkOrderStatus = 'Draft' | 'Approved' | 'In Progress' | 'Completed' | 'Rejected' | 'DRAFT' | 'APPROVED' | 'REJECTED' | 'COMPLETED';
 
 export interface EvidenceItem {
   field: string;
@@ -79,8 +81,14 @@ export interface RuleEvaluation {
 export interface PropertyIssue {
   issue_id: string;
   unit_id: string;
+  issue_type: string;
   title: string;
   description: string;
+  location?: string;
+  severity: 'low' | 'medium' | 'high';
+  confidence: number;
+  recommended_action?: string;
+  evidence: string;
   observed_condition: string;
   detected_equipment: string[];
   uncertainty_notes: string[];
@@ -90,7 +98,7 @@ export interface PropertyIssue {
     repair_description: string;
     status: WorkOrderStatus;
   };
-  status: 'Draft' | 'Approved' | 'Rejected';
+  status: PropertyIssueStatus;
   created_at: string;
 }
 
@@ -120,6 +128,8 @@ export interface WorkOrderRecord {
   unit_id: string;
   title: string;
   description: string;
+  priority: WorkOrderPriority;
+  recommended_action: string;
   status: WorkOrderStatus;
   created_at: string;
   is_mock: boolean;
