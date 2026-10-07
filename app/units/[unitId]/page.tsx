@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { evaluateLeaseAgainstRules } from '@/services/lease-validation';
 import { getLeaseByUnitId, getUnitById } from '@/services/demo-data-store';
 import unitsData from '@/data/units.json';
+import LeaseReview from './lease-review';
+import { getDemoDataStore } from '@/services/demo-data-store';
 
 export default function UnitDetailsPage({ params }: { params: { unitId: string } }) {
   const unit = getUnitById(params.unitId);
@@ -53,6 +55,7 @@ export default function UnitDetailsPage({ params }: { params: { unitId: string }
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <section className="space-y-6">
+          <LeaseReview lease={leaseRecord} auditCount={getDemoDataStore().leaseAudit.filter((record) => record.leaseId === leaseRecord.lease_id).length} />
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-xl font-semibold text-navy">Lease overview</h2>

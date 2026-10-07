@@ -1,5 +1,5 @@
 import unitsData from '@/data/units.json';
-import type { DemoDataStore, LeaseRecord, PropertyIssue, Unit, WorkOrderRecord } from '@/types/domain';
+import type { DemoDataStore, LeaseAuditRecord, LeaseRecord, PropertyIssue, Unit, WorkOrderRecord } from '@/types/domain';
 import { flattenUnits } from '@/services/unit-matching';
 
 const demoLeaseRecord: LeaseRecord = {
@@ -48,6 +48,7 @@ const demoLeaseRecord: LeaseRecord = {
   is_mock: true,
   source_note: 'Demo-only lease record. This record is illustrative and must be reviewed before it is treated as a verified business fact.',
   status: 'pending_review',
+  review_status: 'PENDING_REVIEW',
   created_at: '2025-01-02T00:00:00.000Z',
 };
 
@@ -80,17 +81,23 @@ const demoWorkOrder: WorkOrderRecord = {
   is_mock: true,
 };
 
-export function getDemoDataStore(): DemoDataStore {
+let store: DemoDataStore = createInitialStore();
+
+function createInitialStore(): DemoDataStore {
   return {
     units: flattenUnits(unitsData),
-    leases: [demoLeaseRecord],
-    issues: [demoIssue],
-    workOrders: [demoWorkOrder],
+    leases: [structuredClone(demoLeaseRecord)],
+    issues: [structuredClone(demoIssue)],
+    workOrders: [structuredClone(demoWorkOrder)],
+    leaseAudit: [],
   };
 }
 
+export function resetDemoDataStore(): void { store = createInitialStore(); }
+export function getDemoDataStore(): DemoDataStore { return store; }
+
 export function getUnits(): Unit[] {
-  return getDemoDataStore().units;
+  return store.units;
 }
 
 export function getUnitById(unitId: string): Unit | undefined {
@@ -98,13 +105,55 @@ export function getUnitById(unitId: string): Unit | undefined {
 }
 
 export function getLeaseByUnitId(unitId: string): LeaseRecord | undefined {
-  return getDemoDataStore().leases.find((lease) => lease.unit_id === unitId);
+  return store.leases.find((lease) => lease.unit_id === unitId);
+}
+
+export function updateLease(leaseId: string, values: Partial<LeaseRecord>, reviewer = 'Property owner'): LeaseRecord | undefined {
+  const lease = store.leases.find((item) => item.lease_id === leaseId);
+  if (!lease) return undefined;
+  const changes: LeaseAuditRecord['changes'] = {};
+  for (const [key, after] of Object.entries(values)) {
+    if (key === 'unit_id' || key === 'lease_id' || key === 'status' || key === 'review_status' || key === 'created_at') continue;
+    const before = (lease as unknown as Record<string, unknown>)[key];
+    if (JSON.stringify(before) !== JSON.stringify(after)) changes[key] = { before, after };
+  }
+  Object.assign(lease, values, { unit_id: lease.unit_id });
+  lease.review_status = 'PENDING_REVIEW';
+  lease.status = 'pending_review';
+  recordLeaseAction(leaseId, 'SAVE_CORRECTIONS', changes, reviewer);
+  return lease;
+}
+
+export function recordLeaseAction(leaseId: string, action: LeaseAuditRecord['action'], changes: LeaseAuditRecord['changes'] = {}, reviewer = 'Property owner'): void {
+  store.leaseAudit.push({ id: `AUDIT-${store.leaseAudit.length + 1}`, leaseId, action, changes, reviewer, reviewedAt: new Date().toISOString() });
+}
+
+export function acceptLease(leaseId: string, reviewer = 'Property owner'): { lease?: LeaseRecord; error?: string } {
+  const lease = store.leases.find((item) => item.lease_id === leaseId);
+  if (!lease) return { error: 'Lease not found.' };
+  const unit = store.units.find((item) => item.unit_id === lease.unit_id);
+  if (!unit) return { error: `Unit ${lease.unit_id} was not found.` };
+  if (unit.status !== 'available') return { error: `Unit ${lease.unit_id} is already occupied.` };
+  unit.status = 'occupied';
+  lease.review_status = 'ACCEPTED';
+  lease.status = 'approved';
+  recordLeaseAction(leaseId, 'ACCEPT', {}, reviewer);
+  return { lease };
+}
+
+export function rejectLease(leaseId: string, reviewer = 'Property owner'): LeaseRecord | undefined {
+  const lease = store.leases.find((item) => item.lease_id === leaseId);
+  if (!lease) return undefined;
+  lease.review_status = 'REJECTED';
+  lease.status = 'rejected';
+  recordLeaseAction(leaseId, 'REJECT', {}, reviewer);
+  return lease;
 }
 
 export function getIssuesByUnitId(unitId: string): PropertyIssue[] {
-  return getDemoDataStore().issues.filter((issue) => issue.unit_id === unitId);
+  return store.issues.filter((issue) => issue.unit_id === unitId);
 }
 
 export function getWorkOrdersByUnitId(unitId: string): WorkOrderRecord[] {
-  return getDemoDataStore().workOrders.filter((workOrder) => workOrder.unit_id === unitId);
+  return store.workOrders.filter((workOrder) => workOrder.unit_id === unitId);
 }

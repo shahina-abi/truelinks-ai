@@ -1,6 +1,7 @@
 export type RuleStatus = 'PASS' | 'FAIL' | 'NOT_DETERMINABLE';
 export type UnitStatus = 'available' | 'occupied';
 export type ReviewAction = 'accept' | 'edit' | 'reject' | 'dismiss';
+export type LeaseReviewStatus = 'PENDING_REVIEW' | 'ACCEPTED' | 'REJECTED';
 export type WorkOrderStatus = 'Draft' | 'Approved' | 'In Progress' | 'Completed' | 'Rejected';
 
 export interface EvidenceItem {
@@ -60,6 +61,7 @@ export interface LeaseExtraction {
 export interface LeaseRecord extends LeaseExtraction {
   lease_id: string;
   status: 'draft' | 'pending_review' | 'approved' | 'rejected';
+  review_status: LeaseReviewStatus;
   created_at: string;
 }
 
@@ -103,6 +105,15 @@ export interface ReviewRecord {
   reason: string;
 }
 
+export interface LeaseAuditRecord {
+  id: string;
+  leaseId: string;
+  action: 'SAVE_CORRECTIONS' | 'ACCEPT' | 'REJECT';
+  changes: Record<string, { before: unknown; after: unknown }>;
+  reviewer: string;
+  reviewedAt: string;
+}
+
 export interface WorkOrderRecord {
   work_order_id: string;
   issue_id?: string;
@@ -119,4 +130,5 @@ export interface DemoDataStore {
   leases: LeaseRecord[];
   issues: PropertyIssue[];
   workOrders: WorkOrderRecord[];
+  leaseAudit: LeaseAuditRecord[];
 }
