@@ -48,4 +48,17 @@ describe('human lease review workflow', () => {
     expect(getLeaseByUnitId('MC-A-0301')).toBeUndefined();
     expect(getLeaseByUnitId('MC-B-1204')?.unit_id).toBe('MC-B-1204');
   });
+
+  it('includes illustrative demo evidence for every field displayed in the review form', () => {
+    const lease = getLeaseByUnitId('MC-B-1204')!;
+    const requiredEvidenceFields = [
+      'landlord', 'tenant', 'unit_id', 'commencement_date', 'expiry_date', 'term_months',
+      'monthly_rent', 'annual_rent', 'deposit_amount', 'payment_frequency', 'escalation_clause',
+      'renewal', 'termination',
+    ];
+
+    requiredEvidenceFields.forEach((field) => {
+      expect(lease.evidence.some((item) => item.field === field && !!item.text && /Illustrative demo evidence|Demo evidence/i.test(item.text))).toBe(true);
+    });
+  });
 });
